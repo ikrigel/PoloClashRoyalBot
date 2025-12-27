@@ -637,7 +637,10 @@
         576
       ],
       "id": "e5e10e65-8cc4-4a02-913a-60d84987707a",
-      "name": "HTTP Request Clan"
+      "name": "HTTP Request Clan",
+      "alwaysOutputData": true,
+      "retryOnFail": true,
+      "onError": "continueRegularOutput"
     },
     {
       "parameters": {
@@ -662,11 +665,12 @@
       "id": "3e87f68d-1511-4a2a-840a-a6bd1e17cd94",
       "name": "HTTP Request Player",
       "alwaysOutputData": true,
-      "retryOnFail": true
+      "retryOnFail": true,
+      "onError": "continueRegularOutput"
     },
     {
       "parameters": {
-        "jsCode": "// Get the API response\nconst player = $input.item.json;\n\n// Format the player stats message\nconst message = `\n👤 **${player.name}** (${player.tag})\n\n🏆 **Trophies**: ${player.trophies.toLocaleString()}\n📊 **Best Trophies**: ${player.bestTrophies.toLocaleString()}\n⭐ **Level**: ${player.expLevel}\n\n🎯 **Arena**: ${player.arena.name}\n🏅 **Wins**: ${player.wins.toLocaleString()}\n❌ **Losses**: ${player.losses.toLocaleString()}\n\n⚔️ **Battle Count**: ${player.battleCount.toLocaleString()}\n🎁 **Three Crown Wins**: ${player.threeCrownWins.toLocaleString()}\n\n${player.clan ? `🏰 **Clan**: ${player.clan.name}` : ''}\n${player.role ? `👑 **Role**: ${player.role}` : ''}\n`;\n\nreturn {\n  json: {\n    chat_id: $input.item.json.chat_id || $('Telegram Trigger').item.json.message.chat.id,\n    message: message\n  }\n};"
+        "jsCode": "// Get the API response\nconst apiResponse = $input.item.json;\n\n// Get chat_id\nlet chatId;\ntry {\n  chatId = $input.item.json.chat_id;\n} catch (e) {\n  // Fallback to find chat_id from workflow\n  const allItems = $input.all();\n  for (let item of allItems) {\n    if (item.json.chat_id) {\n      chatId = item.json.chat_id;\n      break;\n    }\n  }\n}\n\n// Check if API returned an error\nif (apiResponse.error || apiResponse.reason || apiResponse.message === 'Not found') {\n  // Handle 404 - Player not found\n  return {\n    json: {\n      chat_id: chatId,\n      error: 'player_not_found',\n      message: '❌ Player not found.\\n\\nPlease check the player tag and try again.\\n\\nExample: /player 2PP\\n\\n💡 Make sure the tag is correct (without spaces).'\n    }\n  };\n}\n\n// Check if we have valid player data\nif (!apiResponse.name || !apiResponse.tag) {\n  return {\n    json: {\n      chat_id: chatId,\n      error: 'invalid_response',\n      message: '❌ Invalid response from Clash Royale API.\\n\\nPlease try again later or check if the tag is correct.'\n    }\n  };\n}\n\n// Everything is OK - format the player stats message\nconst player = apiResponse;\n\nconst message = `\n👤 *${player.name}* (${player.tag})\n\n🏆 *Trophies*: ${player.trophies.toLocaleString()}\n📊 *Best Trophies*: ${player.bestTrophies.toLocaleString()}\n⭐ *Level*: ${player.expLevel}\n\n🎯 *Arena*: ${player.arena.name}\n🏅 *Wins*: ${player.wins.toLocaleString()}\n❌ *Losses*: ${player.losses.toLocaleString()}\n\n⚔️ *Battle Count*: ${player.battleCount.toLocaleString()}\n🎁 *Three Crown Wins*: ${player.threeCrownWins.toLocaleString()}\n\n${player.clan ? `🏰 *Clan*: ${player.clan.name}` : ''}\n${player.role ? `👑 *Role*: ${player.role}` : ''}\n`;\n\nreturn {\n  json: {\n    chat_id: chatId,\n    message: message.trim()\n  }\n};"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -675,7 +679,10 @@
         96
       ],
       "id": "e9d3292b-0399-4ec8-a570-20268e83dbee",
-      "name": "Code in JavaScript Player"
+      "name": "Code in JavaScript Player",
+      "alwaysOutputData": true,
+      "retryOnFail": true,
+      "onError": "continueRegularOutput"
     },
     {
       "parameters": {
@@ -727,7 +734,7 @@
     },
     {
       "parameters": {
-        "chatId": "={{ $json.chat_id }}",
+        "chatId": "={{ $('If Player').item.json.original_message.chat.id }}",
         "text": "={{ $json.message }}",
         "additionalFields": {
           "appendAttribution": false,
@@ -743,16 +750,19 @@
       "id": "a3f69571-d1a8-47d5-af00-7f6bfa89f1a2",
       "name": "Send a text message player",
       "webhookId": "2eb5a937-069b-4430-b03c-71e32114dc26",
+      "alwaysOutputData": true,
+      "retryOnFail": true,
       "credentials": {
         "telegramApi": {
           "id": "l6sNpXnvs8M53ccH",
           "name": "Telegram account"
         }
-      }
+      },
+      "onError": "continueRegularOutput"
     },
     {
       "parameters": {
-        "chatId": "={{ $json.chat_id }}",
+        "chatId": "={{ $('If Clan').item.json.original_message.from.id }}",
         "text": "={{ $json.message }}",
         "additionalFields": {
           "appendAttribution": false,
@@ -825,7 +835,10 @@
         576
       ],
       "id": "322e3f53-a1bf-4e09-a77b-e57bb641e81a",
-      "name": "Preserve chat_id"
+      "name": "Preserve chat_id",
+      "alwaysOutputData": true,
+      "retryOnFail": true,
+      "onError": "continueRegularOutput"
     },
     {
       "parameters": {
@@ -838,7 +851,10 @@
         96
       ],
       "id": "8442e7cd-d4b6-40d6-987a-c0bfa96b517b",
-      "name": "Preserve chat_id1"
+      "name": "Preserve chat_id1",
+      "alwaysOutputData": true,
+      "retryOnFail": true,
+      "onError": "continueRegularOutput"
     },
     {
       "parameters": {
@@ -1129,7 +1145,10 @@
         1440
       ],
       "id": "b5b502a0-a61c-4173-9a29-73945750a82a",
-      "name": "HTTP Request card"
+      "name": "HTTP Request card",
+      "retryOnFail": true,
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput"
     },
     {
       "parameters": {
@@ -1142,11 +1161,14 @@
         1440
       ],
       "id": "9342af7d-6a83-40c5-a8df-8b4dc869cb4d",
-      "name": "Code in JavaScript Card"
+      "name": "Code in JavaScript Card",
+      "alwaysOutputData": true,
+      "retryOnFail": true,
+      "onError": "continueRegularOutput"
     },
     {
       "parameters": {
-        "jsCode": "// Get the API response\nconst clan = $input.item.json;\n\n// Get chat_id from the workflow items\nlet chatId;\n\nconst items = $input.all();\nfor (let item of items) {\n  if (item.json.chat_id) {\n    chatId = item.json.chat_id;\n    break;\n  }\n}\n\n// If chat_id wasn't found, there's an issue\nif (!chatId) {\n  throw new Error('chat_id not found in workflow');\n}\n\n// Format the clan info message\nconst message = `\n🏰 *${clan.name}* (${clan.tag})\n\n📝 *Description*: ${clan.description || 'No description'}\n\n👥 *Members*: ${clan.members}/50\n🏆 *Clan Score*: ${clan.clanScore.toLocaleString()}\n🏅 *Clan War Trophies*: ${clan.clanWarTrophies ? clan.clanWarTrophies.toLocaleString() : 'N/A'}\n\n🎯 *Type*: ${clan.type}\n📍 *Location*: ${clan.location ? clan.location.name : 'International'}\n🏆 *Required Trophies*: ${clan.requiredTrophies.toLocaleString()}\n\n${clan.badgeName ? `🛡️ *Badge*: ${clan.badgeName}` : ''}\n`;\n\nreturn {\n  json: {\n    chat_id: chatId,\n    message: message.trim()\n  }\n};"
+        "jsCode": "// Get the API response\nconst apiResponse = $input.item.json;\n\n// Get chat_id\nlet chatId;\nconst items = $input.all();\nfor (let item of items) {\n  if (item.json.chat_id) {\n    chatId = item.json.chat_id;\n    break;\n  }\n}\n\n// Check if API returned an error\nif (apiResponse.error || apiResponse.reason || apiResponse.message === 'Not found') {\n  return {\n    json: {\n      chat_id: chatId,\n      error: 'clan_not_found',\n      message: '❌ Clan not found.\\n\\nPlease check the clan tag and try again.\\n\\nExample: /clan 2CCCP\\n\\n💡 Make sure the tag is correct (without spaces).'\n    }\n  };\n}\n\n// Check if we have valid clan data\nif (!apiResponse.name || !apiResponse.tag) {\n  return {\n    json: {\n      chat_id: chatId,\n      error: 'invalid_response',\n      message: '❌ Invalid response from Clash Royale API.\\n\\nPlease try again later or check if the tag is correct.'\n    }\n  };\n}\n\n// Everything is OK - format the clan info message\nconst clan = apiResponse;\n\nconst message = `\n🏰 *${clan.name}* (${clan.tag})\n\n📝 *Description*: ${clan.description || 'No description'}\n\n👥 *Members*: ${clan.members}/50\n🏆 *Clan Score*: ${clan.clanScore.toLocaleString()}\n🏅 *Clan War Trophies*: ${clan.clanWarTrophies ? clan.clanWarTrophies.toLocaleString() : 'N/A'}\n\n🎯 *Type*: ${clan.type}\n📍 *Location*: ${clan.location ? clan.location.name : 'International'}\n🏆 *Required Trophies*: ${clan.requiredTrophies.toLocaleString()}\n\n${clan.badgeName ? `🛡️ *Badge*: ${clan.badgeName}` : ''}\n`;\n\nreturn {\n  json: {\n    chat_id: chatId,\n    message: message.trim()\n  }\n};"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -1155,7 +1177,10 @@
         576
       ],
       "id": "5c24b21c-1b66-42b7-bb80-8e5d887ddd37",
-      "name": "Code in JavaScript clan"
+      "name": "Code in JavaScript clan",
+      "alwaysOutputData": true,
+      "retryOnFail": true,
+      "onError": "continueRegularOutput"
     },
     {
       "parameters": {
@@ -1251,7 +1276,10 @@
         1440
       ],
       "id": "aa980dc4-6d33-4aac-b724-b78aa2112b89",
-      "name": "Preserve card data"
+      "name": "Preserve card data",
+      "alwaysOutputData": true,
+      "retryOnFail": true,
+      "onError": "continueRegularOutput"
     },
     {
       "parameters": {
@@ -1303,19 +1331,6 @@
     },
     {
       "parameters": {
-        "jsCode": "// Get the message text\nconst messageText = $input.item.json.message.text;\n\n// Extract player tag\nlet playerTag = '';\n\nif (messageText.startsWith('/chests ')) {\n  // Direct command with tag: /chests TAG\n  playerTag = messageText.replace('/chests', '').trim();\n  \n} else if (messageText === '/chests') {\n  // Just /chests without tag - ask for it\n  return {\n    json: {\n      chat_id: $input.item.json.message.chat.id,\n      error: 'ask_tag',\n      message: '📦 Please send me your player tag.\\n\\nExample: 2PP or #2PP\\n\\n💡 Find your tag: Profile → Settings → Copy Tag'\n    }\n  };\n  \n} else if (messageText.includes('Chests')) {\n  // Button clicked - ask for tag\n  return {\n    json: {\n      chat_id: $input.item.json.message.chat.id,\n      error: 'ask_tag',\n      message: '📦 Please send me your player tag.\\n\\nExample: 2PP or #2PP\\n\\n💡 Find your tag: Profile → Settings → Copy Tag'\n    }\n  };\n  \n} else {\n  // Assume the message IS the player tag\n  playerTag = messageText.trim();\n}\n\n// Remove # if user included it\nplayerTag = playerTag.replace('#', '');\n\n// Check if tag is valid\nif (!playerTag || playerTag.length === 0) {\n  return {\n    json: {\n      chat_id: $input.item.json.message.chat.id,\n      error: 'no_tag',\n      message: 'Please provide your player tag.\\n\\nUsage: /chests TAG\\n\\nExample: /chests 2PP\\n\\n💡 Find your tag: Profile → Settings → Copy Tag'\n    }\n  };\n}\n\n// Return the player tag for the next node\nreturn {\n  json: {\n    chat_id: $input.item.json.message.chat.id,\n    player_tag: playerTag.toUpperCase(),\n    original_message: $input.item.json.message\n  }\n};"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        848,
-        1696
-      ],
-      "id": "e72d2d38-5cca-4521-8800-d4785ea4aab8",
-      "name": "Code in JavaScript Chests"
-    },
-    {
-      "parameters": {
         "chatId": "={{ $json.chat_id }}",
         "text": "={{ $json.message }}",
         "additionalFields": {
@@ -1359,11 +1374,14 @@
         1792
       ],
       "id": "a01ac6b0-0fb1-4fbb-bcbb-71793c108f27",
-      "name": "HTTP Request Chests"
+      "name": "HTTP Request Chests",
+      "alwaysOutputData": true,
+      "retryOnFail": true,
+      "onError": "continueRegularOutput"
     },
     {
       "parameters": {
-        "jsCode": "// Get the chests API response\nconst chestsData = $input.item.json;\n\n// Get chat_id\nlet chatId;\n\n// Try to get from callback flow first\ntry {\n  chatId = $('Code in JavaScript chests after callback').item.json.chat_id;\n} catch (e) {\n  // Not from callback, ignore\n}\n\n// If not found, try message flow\nif (!chatId) {\n  try {\n    chatId = $('Code in JavaScript Chests').item.json.chat_id;  // ← Fixed!\n  } catch (e) {\n    // Still not found\n  }\n}\n\n// Last resort: search all items\nif (!chatId) {\n  const allItems = $input.all();\n  for (let item of allItems) {\n    if (item.json.chat_id) {\n      chatId = item.json.chat_id;\n      break;\n    }\n  }\n}\n\n// Debug logging\nconsole.log('Found chatId:', chatId);\n\n// Add chat_id at the TOP level\nconst result = {\n  chat_id: chatId,\n  ...chestsData\n};\n\nreturn { json: result };"
+        "jsCode": "// Get the chests API response\nconst chestsData = $input.item.json;\n\n// Get chat_id\nlet chatId;\n\n// Try to get from callback flow first\ntry {\n  chatId = $('Code in JavaScript chests after callback').item.json.chat_id;\n} catch (e) {\n  // Not from callback, ignore\n}\n\n// If not found, try message flow\nif (!chatId) {\n  try {\n    chatId = $('Code in JavaScript Chests tag extract').item.json.chat_id;  // ← Fixed!\n  } catch (e) {\n    // Still not found\n  }\n}\n\n// Last resort: search all items\nif (!chatId) {\n  const allItems = $input.all();\n  for (let item of allItems) {\n    if (item.json.chat_id) {\n      chatId = item.json.chat_id;\n      break;\n    }\n  }\n}\n\n// Debug logging\nconsole.log('Found chatId:', chatId);\n\n// Add chat_id at the TOP level\nconst result = {\n  chat_id: chatId,\n  ...chestsData\n};\n\nreturn { json: result };"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -1372,24 +1390,14 @@
         1792
       ],
       "id": "a8cf815c-412d-47a5-bc68-5871137e0f1c",
-      "name": "Preserve chat_id chests"
+      "name": "Preserve chat_id chests",
+      "retryOnFail": true,
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput"
     },
     {
       "parameters": {
-        "jsCode": "// Get the chests API response\nconst chests = $input.item.json.items || [];\nconst chatId = $input.item.json.chat_id;\n\n// Check if there are chests\nif (!chests || chests.length === 0) {\n  return {\n    json: {\n      chat_id: chatId,\n      message: '📦 No upcoming chests found for this player.'\n    }\n  };\n}\n\n// Format the first 10 upcoming chests\nconst chestList = chests.slice(0, 10).map((chest, index) => {\n  return `${index + 1}. *${chest.name}* (+${chest.index})`;\n}).join('\\n');\n\nconst message = `\n📦 *Upcoming Chests*\n\n${chestList}\n\n💡 The number in parentheses shows how many chests until you get it.\n`;\n\nreturn {\n  json: {\n    chat_id: chatId,\n    message: message.trim()\n  }\n};"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        1744,
-        1792
-      ],
-      "id": "279c6beb-c0c5-448a-9388-35ee7b3200e0",
-      "name": "Code in JavaScript Chests1"
-    },
-    {
-      "parameters": {
-        "chatId": "={{ $json.chat_id }}",
+        "chatId": "={{ $('If Chests').item.json.original_message.from.id }}",
         "text": "={{ $json.message }}",
         "additionalFields": {
           "appendAttribution": false,
@@ -1645,6 +1653,35 @@
         }
       },
       "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get the message text\nconst messageText = $input.item.json.message.text;\n\n// Extract player tag\nlet playerTag = '';\n\nif (messageText.startsWith('/chests ')) {\n  // Direct command with tag: /chests TAG\n  playerTag = messageText.replace('/chests', '').trim();\n  \n} else if (messageText === '/chests') {\n  // Just /chests without tag - ask for it\n  return {\n    json: {\n      chat_id: $input.item.json.message.chat.id,\n      error: 'ask_tag',\n      message: '📦 Please send me your player tag.\\n\\nExample: 2PP or #2PP\\n\\n💡 Find your tag: Profile → Settings → Copy Tag'\n    }\n  };\n  \n} else if (messageText.includes('Chests')) {\n  // Button clicked - ask for tag\n  return {\n    json: {\n      chat_id: $input.item.json.message.chat.id,\n      error: 'ask_tag',\n      message: '📦 Please send me your player tag.\\n\\nExample: 2PP or #2PP\\n\\n💡 Find your tag: Profile → Settings → Copy Tag'\n    }\n  };\n  \n} else {\n  // Assume the message IS the player tag\n  playerTag = messageText.trim();\n}\n\n// Remove # if user included it\nplayerTag = playerTag.replace('#', '');\n\n// Check if tag is valid\nif (!playerTag || playerTag.length === 0) {\n  return {\n    json: {\n      chat_id: $input.item.json.message.chat.id,\n      error: 'no_tag',\n      message: 'Please provide your player tag.\\n\\nUsage: /chests TAG\\n\\nExample: /chests 2PP\\n\\n💡 Find your tag: Profile → Settings → Copy Tag'\n    }\n  };\n}\n\n// Return the player tag for the next node\nreturn {\n  json: {\n    chat_id: $input.item.json.message.chat.id,\n    player_tag: playerTag.toUpperCase(),\n    original_message: $input.item.json.message\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        848,
+        1696
+      ],
+      "id": "e72d2d38-5cca-4521-8800-d4785ea4aab8",
+      "name": "Code in JavaScript Chests tag extract"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get the API response\nconst apiResponse = $input.item.json;\nconst chatId = $input.item.json.chat_id;\n\n// Check if API returned an error\nif (apiResponse.error || apiResponse.reason || apiResponse.message === 'Not found') {\n  return {\n    json: {\n      chat_id: chatId,\n      error: 'player_not_found',\n      message: '❌ Player not found.\\n\\nPlease check the player tag and try again.\\n\\nExample: /chests 2PP\\n\\n💡 Make sure the tag is correct (without spaces).'\n    }\n  };\n}\n\n// Get chests from response\nconst chests = apiResponse.items || [];\n\n// Check if there are chests\nif (!chests || chests.length === 0) {\n  return {\n    json: {\n      chat_id: chatId,\n      error: 'no_chests',\n      message: '📦 No upcoming chests found for this player.\\n\\nThis might mean:\\n• Invalid player tag\\n• API error\\n\\nPlease check the tag and try again.'\n    }\n  };\n}\n\n// Format the first 10 upcoming chests\nconst chestList = chests.slice(0, 10).map((chest, index) => {\n  return `${index + 1}. *${chest.name}* (+${chest.index})`;\n}).join('\\n');\n\nconst message = `\n📦 *Upcoming Chests*\n\n${chestList}\n\n💡 The number in parentheses shows how many chests until you get it.\n`;\n\nreturn {\n  json: {\n    chat_id: chatId,\n    message: message.trim()\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1744,
+        1792
+      ],
+      "id": "279c6beb-c0c5-448a-9388-35ee7b3200e0",
+      "name": "Code in JavaScript Chests",
+      "retryOnFail": true,
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput"
     }
   ],
   "connections": {
@@ -1712,14 +1749,14 @@
         ],
         [
           {
-            "node": "Code in JavaScript Chests",
+            "node": "Code in JavaScript Chests tag extract",
             "type": "main",
             "index": 0
           }
         ],
         [
           {
-            "node": "Code in JavaScript Chests",
+            "node": "Code in JavaScript Chests tag extract",
             "type": "main",
             "index": 0
           }
@@ -2083,17 +2120,6 @@
         ]
       ]
     },
-    "Code in JavaScript Chests": {
-      "main": [
-        [
-          {
-            "node": "If Chests",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
     "HTTP Request Chests": {
       "main": [
         [
@@ -2109,18 +2135,7 @@
       "main": [
         [
           {
-            "node": "Code in JavaScript Chests1",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Code in JavaScript Chests1": {
-      "main": [
-        [
-          {
-            "node": "Send a text message chests",
+            "node": "Code in JavaScript Chests",
             "type": "main",
             "index": 0
           }
@@ -2158,6 +2173,28 @@
     "Answer Query a callback send help": {
       "main": [
         []
+      ]
+    },
+    "Code in JavaScript Chests tag extract": {
+      "main": [
+        [
+          {
+            "node": "If Chests",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript Chests": {
+      "main": [
+        [
+          {
+            "node": "Send a text message chests",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     }
   },
